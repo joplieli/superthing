@@ -6,7 +6,7 @@ import { V } from './core/rig.js';
 const Q = new URLSearchParams(location.search);
 const W = +(Q.get('w') || 960), H = +(Q.get('h') || 540);
 const eng = new Engine(W, H);
-const scene = new THREE.Scene(); scene.background = new THREE.Color('#151a2c');
+const scene = new THREE.Scene(); scene.background = new THREE.Color('#151a2c'); scene.environment = eng.envRoom; scene.environmentIntensity = 0.35;
 const cam = new THREE.PerspectiveCamera(30, W / H, 0.5, 500);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ map: woodTex('#6b4a33', 3, 8, 8), roughness: 0.75 }));
 floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);

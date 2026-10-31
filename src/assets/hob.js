@@ -7,18 +7,18 @@ import { tinLitho, rivets, roundRect, shade, cnv, toTex, noiseCanvas } from '../
 const DRUM0 = 0;
 const RED = '#c8553d', CREAM = '#efe2c4', TEAL = '#2f7f7a', BRASS = '#c9a24a', GUN = '#5d6670';
 
-function litho(design, w, h, seed, opts = {}) { return tinLitho(design, { w, h, seed, ...opts }); }
+function litho(design, w, h, seed, opts = {}) { return tinLitho(design, { w, h, seed, wear: 0.7, ...opts }); }
 function tinMat(l, env, extra = {}) {
-  return new THREE.MeshStandardMaterial({ map: l.map, roughnessMap: l.orm, metalnessMap: l.orm, roughness: 1, metalness: 1, envMap: env, envMapIntensity: 1, ...extra });
+  return new THREE.MeshStandardMaterial({ map: l.map, roughnessMap: l.orm, metalnessMap: l.orm, roughness: 1, metalness: 1, ...extra });
 }
 function fillBase(x, w, h, c = RED) { x.fillStyle = c; x.fillRect(0, 0, w, h); }
 function band(x, w, y0, y1, c) { x.fillStyle = c; x.fillRect(0, y0, w, y1 - y0); }
 
-function brassMat(env, rough = 0.32) {
+function brassMat(env, rough = 0.42) {
   const n = noiseCanvas(64, 6, 77, 4); const { c, x } = cnv(256); x.fillStyle = '#fff'; x.fillRect(0, 0, 256, 256);
   x.globalAlpha = 0.6; x.drawImage(n, 0, 0, 256, 256);
   const t = toTex(c, { srgb: false });
-  return new THREE.MeshStandardMaterial({ color: BRASS, metalness: 1, roughness: rough, roughnessMap: t, envMap: env, envMapIntensity: 1.1 });
+  return new THREE.MeshStandardMaterial({ color: '#a8823c', metalness: 1, roughness: rough, roughnessMap: t });
 }
 
 const EYE_VS = /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
@@ -57,9 +57,9 @@ void main(){
 }`;
 
 function digitsTex() {
-  const W = 1024, H = 128; const { c, x } = cnv(W, H);
+  const W = 1024, H = 160; const { c, x } = cnv(W, H);
   x.fillStyle = '#f1e8d2'; x.fillRect(0, 0, W, H);
-  x.fillStyle = '#1d1a17'; x.font = 'bold 96px DejaVu Sans Mono, monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = '#1d1a17'; x.font = 'bold 92px DejaVu Sans Mono, monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
   for (let d = 0; d < 10; d++) {
     x.save(); x.translate((d + 0.5) * W / 10, H / 2); x.rotate(Math.PI / 2); x.fillText(String(d), 0, 4); x.restore();
     x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(d * W / 10, 0, 2, H); x.fillStyle = '#1d1a17';
@@ -74,7 +74,7 @@ export function createHob(env) {
   const add = (parent, geo, mat, pos = [0, 0, 0], rot = [0, 0, 0]) => {
     const m = new THREE.Mesh(geo, mat); m.position.set(...pos); m.rotation.set(...rot); m.castShadow = true; m.receiveShadow = true; parent.add(m); meshes.push(m); return m;
   };
-  const brass = brassMat(env), brassDark = brassMat(env, 0.5); brassDark.color.set('#8a6a2c');
+  const brass = brassMat(env), brassDark = brassMat(env, 0.55); brassDark.color.set('#76592a');
 
   // --- textures ---
   const torsoFront = litho((x, w, h) => {
@@ -84,8 +84,8 @@ export function createHob(env) {
     x.fillStyle = TEAL; x.font = 'bold 34px DejaVu Serif'; x.textAlign = 'center'; x.fillText('DAWNWORKS', w / 2, h * 0.33);
     x.fillStyle = RED; x.font = 'italic bold 28px DejaVu Serif'; x.fillText('No. 1', w / 2, h * 0.78);
     // odometer frame
-    x.fillStyle = '#2a2420'; roundRect(x, w * 0.24, h * 0.42, w * 0.52, h * 0.2, 10); x.fill();
-    x.strokeStyle = BRASS; x.lineWidth = 8; roundRect(x, w * 0.24, h * 0.42, w * 0.52, h * 0.2, 10); x.stroke();
+    x.fillStyle = '#2a2420'; roundRect(x, w * 0.26, h * 0.455, w * 0.48, h * 0.135, 8); x.fill();
+    x.strokeStyle = BRASS; x.lineWidth = 8; roundRect(x, w * 0.26, h * 0.455, w * 0.48, h * 0.135, 8); x.stroke();
     // vents
     x.fillStyle = shade(RED, -0.45); for (let i = 0; i < 6; i++) { roundRect(x, w * 0.2 + i * w * 0.105, h * 0.9, w * 0.07, h * 0.06, 6); x.fill(); }
     const rv = []; for (let i = 0; i < 8; i++) { rv.push([w * 0.06 + i * w * 0.125, h * 0.2]); } rv.push([w * 0.06, h * 0.55], [w * 0.94, h * 0.55], [w * 0.06, h * 0.86], [w * 0.94, h * 0.86]);
@@ -113,7 +113,7 @@ export function createHob(env) {
   const mFront = tinMat(torsoFront, env), mSide = tinMat(torsoSide, env), mBack = tinMat(torsoBack, env), mTop = tinMat(torsoTop, env);
   const mHeadF = tinMat(headFront, env), mHeadS = tinMat(headSide, env), mHeadT = tinMat(headTop, env), mHeadB = tinMat(headBack, env);
   const mLimb = tinMat(limbTex, env), mPelvis = tinMat(pelvisTex, env), mFoot = tinMat(footTex, env), mHand = tinMat(handTex, env);
-  const mDark = new THREE.MeshStandardMaterial({ color: '#221c19', roughness: 0.6, metalness: 0.3, envMap: env });
+  const mDark = new THREE.MeshStandardMaterial({ color: '#221c19', roughness: 0.6, metalness: 0.3 });
 
   // --- skeleton + meshes ---
   J.root = root;
@@ -123,13 +123,15 @@ export function createHob(env) {
   add(J.spine, new RoundedBoxGeometry(5.2, 4.8, 3.4, 4, 0.45), [mSide, mSide, mTop, mTop, mFront, mBack], [0, 2.4, 0]);
   // odometer drums
   const dTex = digitsTex();
-  const drumMat = new THREE.MeshStandardMaterial({ map: dTex, roughness: 0.5, metalness: 0.0, envMap: env, envMapIntensity: 0.3 });
+  const drumMat = new THREE.MeshStandardMaterial({ map: dTex, roughness: 0.45, metalness: 0.0 });
   J.drums = [];
   for (let i = 0; i < 5; i++) {
-    const d = add(J.spine, new THREE.CylinderGeometry(0.3, 0.3, 0.42, 20, 1, false), drumMat, [1.0 - i * 0.48 - 0.04, 2.46, 1.52], [0, 0, Math.PI / 2]);
+    // drums sit mostly inside the torso; its front face masks them to a one-digit window
+    const d = add(J.spine, new THREE.CylinderGeometry(0.42, 0.42, 0.4, 32, 1, false), drumMat, [0.92 - i * 0.46, 2.3, 1.38], [0, 0, Math.PI / 2]);
     d.castShadow = false; J.drums.push(d);
   }
-  add(J.spine, new THREE.BoxGeometry(2.5, 0.75, 0.3), mDark, [0.0, 2.46, 1.42]);
+  for (const yy of [2.3 + 0.19, 2.3 - 0.19]) add(J.spine, new THREE.BoxGeometry(2.42, 0.07, 0.08), brassDark, [0, yy, 1.78]);
+  for (let i = 0; i < 6; i++) add(J.spine, new THREE.BoxGeometry(0.05, 0.4, 0.06), brassDark, [1.15 - i * 0.46, 2.3, 1.79]);
   // wind-up key on the back
   J.key = joint('key', J.spine, [0, 2.4, -1.7]);
   add(J.key, new THREE.CylinderGeometry(0.16, 0.16, 0.9, 10), brass, [0, 0, -0.45], [Math.PI / 2, 0, 0]);
@@ -155,7 +157,7 @@ export function createHob(env) {
     const u = eyeUniforms();
     const face = new THREE.Mesh(new THREE.CircleGeometry(0.84, 40), new THREE.ShaderMaterial({ vertexShader: EYE_VS, fragmentShader: EYE_FS, uniforms: u }));
     face.position.z = 0.02; e.add(face);
-    const glass = new THREE.Mesh(new THREE.SphereGeometry(0.86, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.1, roughness: 0.06, metalness: 0.0, envMap: env, envMapIntensity: 0.35, depthWrite: false }));
+    const glass = new THREE.Mesh(new THREE.SphereGeometry(0.86, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.1, roughness: 0.06, metalness: 0.0, depthWrite: false }));
     glass.rotation.x = Math.PI / 2; glass.scale.set(1, 0.42, 1); glass.position.z = 0.05; e.add(glass);
     const light = new THREE.SpotLight('#ffc46e', 0, 60, 0.42, 0.7, 1.4); light.position.set(0, 0, 0.3); light.target.position.set(0, 0, 10); e.add(light); e.add(light.target);
     J.eyes.push({ j: e, u, light });
@@ -257,7 +259,7 @@ export function createHob(env) {
       const p = Math.pow(10, k); let pos = Math.floor(v / p) % 10;
       const rem = v % p; const roll = k === 0 ? v % 1 : Math.max(0, rem - (p - 1));
       pos = (k === 0 ? Math.floor(v) % 10 : pos) + (k === 0 ? v % 1 : roll);
-      d.rotation.set(0, pos / 10 * Math.PI * 2 + (st.drumOffset ?? DRUM0), Math.PI / 2, 'ZXY');
+      d.rotation.set(0, -(pos + 0.5) / 10 * Math.PI * 2 + (st.drumOffset ?? DRUM0), Math.PI / 2, 'ZXY');
     });
     root.updateMatrixWorld(true);
     // arms
