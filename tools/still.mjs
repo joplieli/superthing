@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer-core';
 import { serve } from './serve.mjs';
 import fs from 'node:fs';
 const args = process.argv.slice(2);
-const opts = Object.fromEntries(args.filter(a => a.startsWith('--')).map(a => a.slice(2).split('=')));
+const opts = Object.fromEntries(args.filter(a => a.startsWith('--')).map(a => { const s = a.slice(2); const i = s.indexOf('='); return [s.slice(0, i), s.slice(i + 1)]; }));
 const pos = args.filter(a => !a.startsWith('--'));
 const [pageUrl, outPrefix, ...frames] = pos;
 const w = +(opts.w || 960), h = +(opts.h || 540);
